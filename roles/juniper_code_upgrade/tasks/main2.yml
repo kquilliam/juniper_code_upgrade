@@ -39,7 +39,7 @@
 
 - name: Pre-snap for device that has no routing
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_pre'
@@ -61,7 +61,7 @@
 
 - name: Pre-snap for device that has BGP
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_pre'
@@ -84,7 +84,7 @@
 
 - name: Pre-snap for device that has OSPF
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_pre'
@@ -107,7 +107,7 @@
 
 - name: Pre-snap for device that has BGP and OSPF
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_pre'
@@ -240,7 +240,7 @@
 
 - name: Post-snap for device that has no routing
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_post'
@@ -260,7 +260,7 @@
 
 - name: Post-snap for device that has BGP
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_post'
@@ -280,7 +280,7 @@
 
 - name: Post-snap for device that has OSPF
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_post'
@@ -300,7 +300,7 @@
 
 - name: Post-snap for device that has BGP and OSPF
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'snap_post'
@@ -320,7 +320,7 @@
 
 - name: Make a jsnapy check for device that has no routing
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'check'
@@ -336,7 +336,7 @@
 
 - name: Make a jsnapy check for device that has BGP
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'check'
@@ -352,7 +352,7 @@
 
 - name: Make a jsnapy check for device that has OSPF
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'check'
@@ -368,7 +368,7 @@
 
 - name: Make a jsnapy check for device that has BGP and OSPF
   juniper_junos_jsnapy:
-    host: "{{ ansible_host }}"
+    host: "{{ inventory_hostname }}"
     user: "{{ user }}"
     passwd: "{{ password }}"
     action: 'check'
@@ -386,7 +386,7 @@
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_current.yml"
+   path: "{{ role_path }}/files/temp_current.yml"
   when:
     - junos_before is success
     - junos_upgrade is success
@@ -397,28 +397,28 @@
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_unreachable.yml"
+   path: "{{ role_path }}/files/temp_unreachable.yml"
   when: junos_before is failed
 
 - name: Add hosts to file that failed to be upgraded
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_failed.yml"
+   path: "{{ role_path }}/files/temp_failed.yml"
   when: junos_upgrade is failed
 
 - name: Add hosts to file that failed JUNOS software install validation
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_validation.yml"
+   path: "{{ role_path }}/files/temp_validation.yml"
   when: "'Current configuration not compatible' in junos_upgrade.stdout"
 
 - name: Add hosts to file that were upgraded but did not pass JSNAPY check
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_snap_failed.yml"
+   path: "{{ role_path }}/files/temp_snap_failed.yml"
   when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage != 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage != 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage != 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
@@ -428,7 +428,7 @@
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_upgrade_failed.yml"
+   path: "{{ role_path }}/files/temp_upgrade_failed.yml"
   when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage == 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage == 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage == 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
@@ -438,7 +438,7 @@
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_snap_upgrade_failed.yml"
+   path: "{{ role_path }}/files/temp_snap_upgrade_failed.yml"
   when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage != 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage != 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage != 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
@@ -448,7 +448,7 @@
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_success.yml"
+   path: "{{ role_path }}/files/temp_success.yml"
   when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage == 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage == 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
         (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage == 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
@@ -458,7 +458,7 @@
   lineinfile:
    create: yes
    line: "{{ inventory_hostname }}"
-   path: "{{ dir }}/files/temp_no_recover.yml"
+   path: "{{ role_path }}/files/temp_no_recover.yml"
   when:
     - junos_upgrade is success
     - junos_upgrade is not skipped
