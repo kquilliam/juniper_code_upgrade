@@ -1,0 +1,5 @@
+- name: Taking variable input for devices and turning into runtime inventory
+  add_host:
+    hostname: "{{ item }}"
+    groups: test_nodes
+  with_items: "{{ device_list.split(',') }}"
