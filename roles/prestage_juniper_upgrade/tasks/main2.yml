@@ -1,0 +1,96 @@
+- name: Pull model vars that contain the models and their associated code and paths to their packages
+  include_vars:
+    file: ../vars/model.yml
+
+- name: Log into to Juniper device and determine model with facts module
+  juniper_junos_facts:
+    host: "{{ inventory_hostname }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    port: 22
+  register: junos_facts
+  ignore_errors: True
+
+- name: Verify file exists(Before)
+  juniper_junos_rpc:
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    host: "{{ inventory_hostname }}"
+    port: 22
+    rpc: file-list
+    kwargs:
+      path: "{{ hostvars[inventory_hostname][junos_facts.facts.model|lower].remote }}"
+#    logfile: log.log
+  changed_when: "'No such file' in junos_verify_before.stdout"
+  register: junos_verify_before
+  ignore_errors: True
+  when: junos_facts is success
+
+- name: Clean file system
+  juniper_junos_rpc:
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    host: "{{ inventory_hostname }}"
+    port: 22
+    rpc: request-system-storage-cleanup
+    timeout: 300
+  register: junos_cleanup
+  ignore_errors: True
+  when:
+    - junos_verify_before is changed
+    - junos_facts is success
+
+- name: Push code to device
+  junos_scp:
+    src: "{{ hostvars[inventory_hostname][junos_facts.facts.model|lower].path }}"
+    dest: /var/tmp
+    provider:
+      username="{{ user }}"
+      password="{{ password }}"
+      host="{{ inventory_hostname }}"
+      port=22
+#  check_mode: yes
+  register: junos_scp
+  ignore_errors: True
+  when:
+    - junos_verify_before is changed
+    - junos_verify_before is not skipped
+
+- name: Verify file exists(After)
+  juniper_junos_rpc:
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    host: "{{ inventory_hostname }}"
+    port: 22
+    rpc: file-list
+    kwargs:
+      path: "{{ hostvars[inventory_hostname][junos_facts.facts.model|lower].remote }}"
+#    logfile: log.log
+  register: junos_verify_after
+  failed_when: "'No such file' in junos_verify_after.stdout"
+  ignore_errors: True
+  when:
+    - junos_scp is success
+    - junos_scp is not skipped
+
+- name: Add hosts to file that received code
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ role_path }}/files/{{ hostvars['localhost']['current_datetime'] }}-success.yml"
+  when: (junos_verify_before is not changed and junos_verify_before is not skipped and junos_verify_before is success and junos_verify_after is skipped and junos_scp is skipped) or
+        (junos_verify_before is changed and junos_verify_after is not skipped and junos_verify_after is success)
+
+- name: Add hosts to file that did not receive code
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ role_path }}/files/{{ hostvars['localhost']['current_datetime'] }}-failed.yml"
+  when: junos_scp is failed or junos_verify_after is failed or junos_verify_before is failed
+
+- name: Add hosts to file that were unreachable
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ role_path }}/files/{{ hostvars['localhost']['current_datetime'] }}-unreachable.yml"
+  when: junos_facts is failed
