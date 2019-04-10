@@ -1,0 +1,190 @@
+##Juniper SRXs
+srx2xx_low_mem:
+  code: 12.1X46-D76
+  path: "/var/tmp/code/juniper/junos-srxsme-12.1X46-D76-domestic.tgz"
+  remote: "/var/tmp/junos-srxsme-12.1X46-D76-domestic.tgz"
+srx2xx_high_mem:
+  code: 12.3X48-D70.3
+  path: "/var/tmp/code/juniper/junos-srxsme-12.3X48-D70.3-domestic.tgz"
+  remote: "/var/tmp/junos-srxsme-12.3X48-D70.3-domestic.tgz"
+srx3xx:
+  code: 15.1X49-D140.2
+  path: "/var/tmp/code/juniper/junos-srxsme-15.1X49-D140.2-domestic.tgz"
+  remote: "/var/tmp/junos-srxsme-15.1X49-D140.2-domestic.tgz"
+
+##Juniper SRX1xx
+srx100h:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx110h-va:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+##Juniper SRX2xx
+srx210he:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx210b:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx210be:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx210h:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx210he2:
+  code: "{{ srx2xx_high_mem.code }}"
+  path: "{{ srx2xx_high_mem.path }}"
+  remote: "{{ srx2xx_high_mem.remote }}"
+srx210he2-poe:
+  code: "{{ srx2xx_high_mem.code }}"
+  path: "{{ srx2xx_high_mem.path }}"
+  remote: "{{ srx2xx_high_mem.remote }}"
+srx220h2:
+  code: "{{ srx2xx_high_mem.code }}"
+  path: "{{ srx2xx_high_mem.path }}"
+  remote: "{{ srx2xx_high_mem.remote }}"
+srx240h:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx240b:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx240b2:
+  code: "{{ srx2xx_low_mem.code }}"
+  path: "{{ srx2xx_low_mem.path }}"
+  remote: "{{ srx2xx_low_mem.remote }}"
+srx240h2:
+  code: "{{ srx2xx_high_mem.code }}"
+  path: "{{ srx2xx_high_mem.path }}"
+  remote: "{{ srx2xx_high_mem.remote }}"
+srx240h2-poe:
+  code: "{{ srx2xx_high_mem.code }}"
+  path: "{{ srx2xx_high_mem.path }}"
+  remote: "{{ srx2xx_high_mem.remote }}"
+srx240h2-dc:
+  code: "{{ srx2xx_high_mem.code }}"
+  path: "{{ srx2xx_high_mem.path }}"
+  remote: "{{ srx2xx_high_mem.remote }}"
+##Juniper SRX3xx
+srx300:
+  code: "{{ srx3xx.code }}"
+  path: "{{ srx3xx.path }}"
+  remote: "{{ srx3xx.remote }}"
+srx320:
+  code: "{{ srx3xx.code }}"
+  path: "{{ srx3xx.path }}"
+  remote: "{{ srx3xx.remote }}"
+srx320-poe:
+  code: "{{ srx3xx.code }}"
+  path: "{{ srx3xx.path }}"
+  remote: "{{ srx3xx.remote }}"
+
+srx340:
+  code: "{{ srx3xx.code }}"
+  path: "{{ srx3xx.path }}"
+  remote: "{{ srx3xx.remote }}"
+srx345:
+  code: "{{ srx3xx.code }}"
+  path: "{{ srx3xx.path }}"
+  remote: "{{ srx3xx.remote }}"
+
+##Juniper SRX550
+srx550:
+  code: 12.3X48-D70.3
+  path: "/var/tmp/code/juniper/junos-srxsme-12.3X48-D70.3-domestic.tgz"
+  remote: "/var/tmp/junos-srxsme-12.3X48-D70.3-domestic.tgz"
+srx550m:
+  code: 15.1X49-D140.2
+  path: "/var/tmp/code/juniper/junos-srxsme-15.1X49-D140.2-domestic.tgz"
+  remote: "/var/tmp/junos-srxsme-15.1X49-D140.2-domestic.tgz"
+
+##Juniper SRX650
+srx650:
+  code: 12.3X48-D70.3
+  path: "/var/tmp/code/juniper/junos-srxsme-12.3X48-D70.3-domestic.tgz"
+  remote: "/var/tmp/junos-srxsme-12.3X48-D70.3-domestic.tgz"
+
+##Juniper EX
+ex2200:
+  code: 12.3R12-S7
+  path: "TBD"
+ex4200:
+  code: 15.1R6-S2.1
+  path: "/var/tmp/code/juniper/jinstall-ex-4200-15.1R6-S2.1-domestic-signed.tgz"
+  remote: "/var/tmp/jinstall-ex-4200-15.1R6-S2.1-domestic-signed.tgz"
+
+##Juniper EX2200
+#ex2200-24p-4g:
+#  code: "{{ ex2200.code }}"
+#  path: "{{ ex2200.path }}"
+#ex2200-24t-4g:
+#  code: "{{ ex2200.code }}"
+#  path: "{{ ex2200.path }}"
+#ex2200-24t-dc-4g:
+#  code: "{{ ex2200.code }}"
+#  path: "{{ ex2200.path }}"
+#ex2200-c-12t-2g:
+#  code: "{{ ex2200.code }}"
+#  path: "{{ ex2200.path }}"
+#ex2200-c-12p-2g:
+#  code: "{{ ex2200.code }}"
+#  path: "{{ ex2200.path }}"
+#ex2200-48t-4g:
+#  code: "{{ ex2200.code }}"
+#  path: "{{ ex2200.path }}"
+#ex2200-48p-4g:
+#  code: "{{ ex2200.code }}"
+#  path: "{{ ex2200.path }}"
+
+##Juniper EX2300
+ex2300-24p:
+  code: 15.1X53-D58.3
+#  path: "/var/tmp/code/juniper/jinstall-ex-4500-15.1R7.9-domestic-signed.tgz"
+#  remote: "/var/tmp/jinstall-ex-4500-15.1R7.9-domestic-signed.tgz"
+#ex4200-48t:
+#  code: "{{ ex4200.code }}"
+#  path: "{{ ex4200.path }}"
+#  remote: "{{ ex4200.remote }}"
+#ex4550-32f:
+#  code: 13.3R9
+#  path: "/var/tmp/code/juniper/jinstall-ex-4500-13.3R9-domestic-signed.tgz"
+#  remote: "/var/tmp/jinstall-ex-4500-13.3R9-domestic-signed.tgz"
+ex4550-32f:
+  code: 15.1R7.9
+  path: "/var/tmp/code/juniper/jinstall-ex-4500-15.1R7.9-domestic-signed.tgz"
+  remote: "/var/tmp/jinstall-ex-4500-15.1R7.9-domestic-signed.tgz"
+
+
+##Juniper MX
+#mx:
+#  code: 17.1R2.7
+#  path: "/var/tmp/code/juniper/jinstall-ppc-17.1R2.7-signed.tgz"
+
+mx:
+  code: 16.1R6.7
+  path: "/var/tmp/code/juniper/jinstall-ppc-16.1R6.7-signed.tgz"
+  remote: "/var/tmp/jinstall-ppc-16.1R6.7-signed.tgz"
+
+##Juniper MX5/10/40/80
+mx5-t:
+  code: "{{ mx.code }}"
+  path: "{{ mx.path }}"
+  remote: "{{ mx.remote }}"
+mx80:
+  code: "{{ mx.code }}"
+  path: "{{ mx.path }}"
+  remote: "{{ mx.remote }}"
+
+microtik:
+  code: 6.42
+  path: "/var/tmp/code/microtik/routeros-mipsbe-6.42.9.npk"
+  remote: "/routeros-mipsbe-6.42.9.npk"
