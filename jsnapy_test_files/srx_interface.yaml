@@ -1,0 +1,16 @@
+interface-status:
+  - command: show interfaces *-* extensive
+  - iterate:
+      xpath: physical-interface
+      id: './name'
+      tests:
+        - no-diff: oper-status       # element in which test is performed
+          err: "FAIL: oper-status for <{{post['name']}}> got changed, before it was <{{pre['oper-status']}}>, now it is <{{post['oper-status']}}>"
+          info: "PASS: oper-status for <{{post['name']}}> is same, before it is <{{pre['oper-status']}}> now it is <{{post['oper-status']}}> "
+  - iterate:
+      xpath: physical-interface
+      id: './name'
+      tests:
+        - no-diff: mtu # element in which test is performed
+          err: "FAIL: mtu for <{{post['name']}}> got changed, before it was <{{pre['mtu']}}>, now it is <{{post['mtu']}}>"
+          info: "PASS: mtu for <{{post['name']}}> is same, before it is <{{pre['mtu']}}> now it is <{{post['mtu']}}> "
