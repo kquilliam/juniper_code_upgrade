@@ -468,18 +468,3 @@
   shell: 'tail -n 50 /var/tmp/logs/{{ inventory_hostname }}.log'
   ignore_errors: True
   when: junos_upgrade is failed
-[kquilliam@MbsNetDotSrv-1 netops]$ cat roles/code_upgrade/tasks/main2.yml | wc -l
-470
-[kquilliam@MbsNetDotSrv-1 netops]$ cat /home/kquilliam/ansible/roles/pan/tasks/panorama_commit
-cat: /home/kquilliam/ansible/roles/pan/tasks/panorama_commit: No such file or directory
-[kquilliam@MbsNetDotSrv-1 netops]$ cat /home/kquilliam/ansible/roles/pan/tasks/panorama_commit.yml
-- name: Committing to Panorama
-  uri:
-    url: "https://66.223.232.42/api/?type=commit&cmd=%3Ccommit%3E%3C/commit%3E"
-    method: GET
-    return_content: yes
-    user: kquilliam
-    password: "Pass123word!$"
-    validate_certs: no
-    force_basic_auth: yes
-  register: panorama_commit
