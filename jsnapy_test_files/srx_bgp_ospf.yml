@@ -1,0 +1,37 @@
+interface-status:
+  - command: show interfaces *-* extensive
+  - iterate:
+      xpath: physical-interface
+      id: './name'
+      tests:
+        - no-diff: oper-status       # element in which test is performed
+          err: "FAIL: oper-status for <{{post['name']}}> got changed, before it was <{{pre['oper-status']}}>, now it is <{{post['oper-status']}}>"
+          info: "PASS: oper-status for <{{post['name']}}> is same, before it is <{{pre['oper-status']}}> now it is <{{post['oper-status']}}> "
+  - iterate:
+      xpath: physical-interface
+      id: './name'
+      tests:
+        - no-diff: mtu # element in which test is performed
+          err: "FAIL: mtu for <{{post['name']}}> got changed, before it was <{{pre['mtu']}}>, now it is <{{post['mtu']}}>"
+          info: "PASS: mtu for <{{post['name']}}> is same, before it is <{{pre['mtu']}}> now it is <{{post['mtu']}}> "
+
+ospf-check:
+  - rpc: get-ospf-neighbor-information
+  - iterate:
+      xpath: ospf-neighbor
+      id: interface-name
+      tests:
+      - list-not-less: interface-name
+        err: 'FAIL: OSPF Neighbor missing: {{pre["interface-name"]}} going to {{pre["neighbor-address"]}}'
+        info: 'PASS: Info: {{post["interface-name"]}} going to {{post["neighbor-address"]}}'
+
+
+bgp-summary:
+  - rpc: get-bgp-summary-information
+  - iterate:
+      xpath: //bgp-peer[normalize-space(peer-state)='Established']
+      id: peer-address
+      tests:
+      - list-not-less: peer-state
+        err: 'FAIL: BGP Neighbour changed: {{post["peer-address"]}} AS {{post["peer-as"]}} State was {{pre["peer-state"]}} and is now {{post["peer-state"]}}'
+        info: 'PASS: BGP Neighbour found: {{post["peer-address"]}} AS {{post["peer-as"]}} State {{post["peer-state"]}}'
