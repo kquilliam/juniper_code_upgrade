@@ -1,0 +1,41 @@
+---
+- name: Initial inventory population
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - include_role:
+      name: juniper_prestage_upgrade
+  - set_fact:
+      current_datetime: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M-%S') }}"
+
+- hosts: test_nodes
+  gather_facts: no
+  connection: local
+  roles:
+    - Juniper.junos
+  strategy: free
+  serial: 60
+
+  tasks:
+  - include_vars:
+      file: ../secrets.yml
+    no_log: true
+
+  - include_role:
+      name: juniper_prestage_upgrade
+      tasks_from: main2
+
+- name: Email and Cleanup
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  vars:
+    datetime: "{{ hostvars['localhost']['current_datetime'] }}"
+
+  tasks:
+  - include_role:
+      name: juniper_prestage_upgrade
+      tasks_from: main3
