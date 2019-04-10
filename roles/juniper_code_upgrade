@@ -1,0 +1,485 @@
+- name: Pull model vars that contain the models and their associated code and paths to their packages
+  include_vars:
+    file: ../vars/model.yml
+
+- name: Log into to Juniper device and determine model with facts module
+  juniper_junos_facts:
+    host: "{{ inventory_hostname }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    port: 22
+  register: junos_before
+  ignore_errors: True
+
+- name: RPC to see if BGP is on the device
+  juniper_junos_rpc:
+    host: "{{ inventory_hostname }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    rpc: get-bgp-summary-information
+    port: 22
+  register: rpc_bgp
+  ignore_errors: True
+  when:
+    - junos_before is success
+    - hostvars[inventory_hostname][junos_before.facts.model|lower].code != junos_before.facts.version
+
+- name: RPC to see if OSPF is on the device
+  juniper_junos_rpc:
+    host: "{{ inventory_hostname }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    rpc: get-ospf-neighbor-information
+    port: 22
+  register: rpc_ospf
+  ignore_errors: True
+  when:
+    - junos_before is success
+    - hostvars[inventory_hostname][junos_before.facts.model|lower].code != junos_before.facts.version
+
+- name: Pre-snap for device that has no routing
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_pre'
+    test_files:
+      - "/opt/jsnapy/tests/srx_interface.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_pre_interface
+  when:
+    - rpc_ospf is not skipped
+    - rpc_ospf is success
+    - rpc_bgp is not skipped
+    - rpc_bgp is success
+    - (rpc_ospf.parsed_output.output is defined) or
+      (rpc_ospf.parsed_output["ospf-neighbor-information"] is defined and rpc_ospf.parsed_output["ospf-neighbor-information"] == "" )
+    - (rpc_bgp.parsed_output.output is defined) or
+      (rpc_bgp.parsed_output["bgp-information"]["peer-count"] is defined and rpc_bgp.parsed_output["bgp-information"]["peer-count"] == "0")
+
+- name: Pre-snap for device that has BGP
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_pre'
+    test_files:
+      - "/opt/jsnapy/tests/srx_bgp.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_pre_bgp
+  when:
+    - rpc_ospf is not skipped
+    - rpc_ospf is success
+    - rpc_bgp is not skipped
+    - rpc_bgp is success
+    - (rpc_ospf.parsed_output.output is defined) or
+      (rpc_ospf.parsed_output["ospf-neighbor-information"] is defined and rpc_ospf.parsed_output["ospf-neighbor-information"] == "" )
+    - rpc_bgp.parsed_output.output is not defined
+    - rpc_bgp.parsed_output["bgp-information"]["peer-count"] is defined
+    - rpc_bgp.parsed_output["bgp-information"]["peer-count"] != "0"
+
+- name: Pre-snap for device that has OSPF
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_pre'
+    test_files:
+      - "/opt/jsnapy/tests/srx_ospf.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_pre_ospf
+  when:
+    - rpc_ospf is not skipped
+    - rpc_ospf is success
+    - rpc_bgp is not skipped
+    - rpc_bgp is success
+    - (rpc_bgp.parsed_output.output is defined) or
+      (rpc_bgp.parsed_output["bgp-information"]["peer-count"] is defined and rpc_bgp.parsed_output["bgp-information"]["peer-count"] == "0")
+    - rpc_ospf.parsed_output.output is not defined
+    - rpc_ospf.parsed_output["ospf-neighbor-information"] is defined
+    - rpc_ospf.parsed_output["ospf-neighbor-information"] != ""
+
+- name: Pre-snap for device that has BGP and OSPF
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_pre'
+    test_files:
+      - "/opt/jsnapy/tests/srx_bgp_ospf.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_pre_bgp_ospf
+  when:
+    - rpc_ospf is not skipped
+    - rpc_ospf is success
+    - rpc_bgp is not skipped
+    - rpc_bgp is success
+    - rpc_ospf.parsed_output.output is not defined
+    - rpc_ospf.parsed_output["ospf-neighbor-information"] is defined
+    - rpc_ospf.parsed_output["ospf-neighbor-information"] != ""
+    - rpc_bgp.parsed_output.output is not defined
+    - rpc_bgp.parsed_output["bgp-information"]["peer-count"] is defined
+    - rpc_bgp.parsed_output["bgp-information"]["peer-count"] != "0"
+
+- name: Save rescue config before upgrade
+  juniper_junos_rpc:
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    host: "{{ inventory_hostname }}"
+    port: 22
+    rpc: request-save-rescue-configuration
+    timeout: 90
+  register: junos_rescue
+  ignore_errors: True
+
+- name: Upgrade Juniper device
+  juniper_junos_rpc:
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    host: "{{ inventory_hostname }}"
+    port: 22
+    rpc: request-package-add
+    kwargs:
+      package-name: "{{ hostvars[inventory_hostname][junos_before.facts.model|lower].remote }}"
+      no-copy:
+    timeout: 2400
+    formats: text
+    logdir: "/var/tmp/logs/"
+  register: junos_upgrade
+  ignore_errors: True
+  until:
+    - junos_upgrade.stdout is defined
+    - "'A reboot is required' in junos_upgrade.stdout or 'There is already an install pending' in junos_upgrade.stdout or 'ERROR' in junos_upgrade.stdout or 'Checking pending install' in junos_upgrade.stdout"
+  retries: 2
+  delay: 300
+  when:
+    - junos_before is success
+    - jsnapy_pre_interface is success or jsnapy_pre_bgp is success or jsnapy_pre_ospf is success or jsnapy_pre_bgp_ospf is success
+    - jsnapy_pre_interface is not skipped or jsnapy_pre_bgp is not skipped or jsnapy_pre_ospf is not skipped or jsnapy_pre_bgp_ospf is not skipped
+
+- name: Reboot device
+  juniper_junos_rpc:
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    host: "{{ inventory_hostname }}"
+    port: 22
+    rpc: request-reboot
+    kwargs:
+      in: "01"
+#    logfile: log.log
+    timeout: 90
+    formats: text
+  register: junos_reboot
+  when:
+    - junos_upgrade is success
+    - junos_upgrade is not skipped
+    - junos_upgrade.stdout is defined
+    - "'There is already an install pending' in junos_upgrade.stdout or 'ERROR' not in junos_upgrade.stdout or 'Checking pending install' in junos_upgrade.stdout"
+
+- name: Pause for reboot after upgrade
+  wait_for:
+    port: 22
+    host: "{{ inventory_hostname }}"
+    delay: 420
+    timeout: 1500
+    sleep: 5
+  register: wait_for
+  ignore_errors: True
+  when:
+    - junos_upgrade is success
+    - junos_upgrade is not skipped
+    - junos_reboot is not skipped
+    - junos_reboot is success
+
+- name: Check Orion to see if host is up
+  uri:
+    url: "https://{{ orion_server }}:17778/SolarWinds/InformationService/v3/Json/Query?query=SELECT%20Status%20FROM%20Orion.Nodes%20WHERE%20%20Caption%20=%20%27{{ inventory_hostname }}%27"
+    validate_certs: no
+    method: GET
+    force_basic_auth: yes
+    user: "{{ user }}"
+    password: "{{ password }}"
+    return_content: yes
+  register: orion
+  ignore_errors: True
+  until: "orion.json is defined and orion.json.results[0].Status == 1"
+  retries: 100
+  when:
+    - wait_for is success
+    - wait_for is not skipped
+    - junos_before is success
+
+- name: Log into Juniper device and check version
+  juniper_junos_facts:
+    host: "{{ inventory_hostname }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    port: 22
+  ignore_errors: True
+  register: junos_after
+  when:
+    - orion is success
+    - wait_for is success
+    - orion is not skipped
+    - wait_for is not skipped
+
+- name: Waiting for routing protocols to stabilize
+  wait_for:
+    timeout: 120
+  when:
+    - junos_after is not skipped
+    - junos_after is success
+
+- name: Post-snap for device that has no routing
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_post'
+    test_files:
+      - "/opt/jsnapy/tests/srx_interface.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_post_interface
+  when:
+    - orion is success
+    - wait_for is success
+    - orion is not skipped
+    - wait_for is not skipped
+    - jsnapy_pre_interface is success
+    - jsnapy_pre_interface is not skipped
+
+- name: Post-snap for device that has BGP
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_post'
+    test_files:
+      - "/opt/jsnapy/tests/srx_bgp.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_post_bgp
+  when:
+    - orion is success
+    - wait_for is success
+    - orion is not skipped
+    - wait_for is not skipped
+    - jsnapy_pre_bgp is success
+    - jsnapy_pre_bgp is not skipped
+
+- name: Post-snap for device that has OSPF
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_post'
+    test_files:
+      - "/opt/jsnapy/tests/srx_ospf.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_post_ospf
+  when:
+    - orion is success
+    - wait_for is success
+    - orion is not skipped
+    - wait_for is not skipped
+    - jsnapy_pre_ospf is success
+    - jsnapy_pre_ospf is not skipped
+
+- name: Post-snap for device that has BGP and OSPF
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'snap_post'
+    test_files:
+      - "/opt/jsnapy/tests/srx_bgp_ospf.yaml"
+#    logfile: "../output/jsnapy_pre.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_post_bgp_ospf
+  when:
+    - orion is success
+    - wait_for is success
+    - orion is not skipped
+    - wait_for is not skipped
+    - jsnapy_pre_bgp_ospf is success
+    - jsnapy_pre_bgp_ospf is not skipped
+
+- name: Make a jsnapy check for device that has no routing
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'check'
+    test_files:
+      - "/opt/jsnapy/tests/srx_interface.yaml"
+#    logfile: "../output/jsnapy_check.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_check_interface
+  when:
+    - jsnapy_post_interface is success
+    - jsnapy_post_interface is not skipped
+
+- name: Make a jsnapy check for device that has BGP
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'check'
+    test_files:
+      - "/opt/jsnapy/tests/srx_bgp.yaml"
+#    logfile: "../output/jsnapy_check.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_check_bgp
+  when:
+    - jsnapy_post_bgp is success
+    - jsnapy_post_bgp is not skipped
+
+- name: Make a jsnapy check for device that has OSPF
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'check'
+    test_files:
+      - "/opt/jsnapy/tests/srx_ospf.yaml"
+#    logfile: "../output/jsnapy_check.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_check_ospf
+  when:
+    - jsnapy_post_ospf is success
+    - jsnapy_post_ospf is not skipped
+
+- name: Make a jsnapy check for device that has BGP and OSPF
+  juniper_junos_jsnapy:
+    host: "{{ ansible_host }}"
+    user: "{{ user }}"
+    passwd: "{{ password }}"
+    action: 'check'
+    test_files:
+      - "/opt/jsnapy/tests/srx_bgp_ospf.yaml"
+#    logfile: "../output/jsnapy_check.log"
+    dir: "../jsnapy/"
+    port: 22
+  register: jsnapy_check_bgp_ospf
+  when:
+    - jsnapy_post_bgp_ospf is success
+    - jsnapy_post_bgp_ospf is not skipped
+
+- name: Add hosts to file that were already on the current code and were not upgraded
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_current.yml"
+  when:
+    - junos_before is success
+    - junos_upgrade is success
+    - hostvars[inventory_hostname][junos_before.facts.model|lower].code == junos_before.facts.version
+    - junos_upgrade.changed == False
+
+- name: Add hosts to file that were unreachable or just failed to be upgraded
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_unreachable.yml"
+  when: junos_before is failed
+
+- name: Add hosts to file that failed to be upgraded
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_failed.yml"
+  when: junos_upgrade is failed
+
+- name: Add hosts to file that failed JUNOS software install validation
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_validation.yml"
+  when: "'Current configuration not compatible' in junos_upgrade.stdout"
+
+- name: Add hosts to file that were upgraded but did not pass JSNAPY check
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_snap_failed.yml"
+  when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage != 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage != 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage != 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp_ospf is success and jsnapy_check_bgp_ospf is not skipped and jsnapy_check_bgp_ospf.passPercentage != 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code)
+
+- name: Add hosts to file that were upgraded and passed JSNAPY check but did not come up on the installed code
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_upgrade_failed.yml"
+  when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage == 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage == 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage == 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp_ospf is success and jsnapy_check_bgp_ospf is not skipped and jsnapy_check_bgp_ospf.passPercentage == 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code)
+
+- name: Add hosts to file that were upgraded but did not come up on the installed code and failed JSNAPY check
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_snap_upgrade_failed.yml"
+  when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage != 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage != 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage != 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp_ospf is success and jsnapy_check_bgp_ospf is not skipped and jsnapy_check_bgp_ospf.passPercentage != 100 and junos_after.facts.version != hostvars[inventory_hostname][junos_before.facts.model|lower].code)
+
+- name: Add hosts to file that were upgraded and passed JSNAPY check
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_success.yml"
+  when: (jsnapy_check_interface is success and jsnapy_check_interface is not skipped and jsnapy_check_interface.passPercentage == 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp is success and jsnapy_check_bgp is not skipped and jsnapy_check_bgp.passPercentage == 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_ospf is success and jsnapy_check_ospf is not skipped and jsnapy_check_ospf.passPercentage == 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code) or
+        (jsnapy_check_bgp_ospf is success and jsnapy_check_bgp_ospf is not skipped and jsnapy_check_bgp_ospf.passPercentage == 100 and junos_after.facts.version == hostvars[inventory_hostname][junos_before.facts.model|lower].code)
+
+- name: Add unrecovered hosts to temp file
+  lineinfile:
+   create: yes
+   line: "{{ inventory_hostname }}"
+   path: "{{ dir }}/files/temp_no_recover.yml"
+  when:
+    - junos_upgrade is success
+    - junos_upgrade is not skipped
+    - orion is failed or wait_for is failed or junos_after is failed
+
+- name: Display log for failed devices
+  shell: 'tail -n 50 /var/tmp/logs/{{ inventory_hostname }}.log'
+  ignore_errors: True
+  when: junos_upgrade is failed
+[kquilliam@MbsNetDotSrv-1 netops]$ cat roles/code_upgrade/tasks/main2.yml | wc -l
+470
+[kquilliam@MbsNetDotSrv-1 netops]$ cat /home/kquilliam/ansible/roles/pan/tasks/panorama_commit
+cat: /home/kquilliam/ansible/roles/pan/tasks/panorama_commit: No such file or directory
+[kquilliam@MbsNetDotSrv-1 netops]$ cat /home/kquilliam/ansible/roles/pan/tasks/panorama_commit.yml
+- name: Committing to Panorama
+  uri:
+    url: "https://66.223.232.42/api/?type=commit&cmd=%3Ccommit%3E%3C/commit%3E"
+    method: GET
+    return_content: yes
+    user: kquilliam
+    password: "Pass123word!$"
+    validate_certs: no
+    force_basic_auth: yes
+  register: panorama_commit
