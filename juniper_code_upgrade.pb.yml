@@ -1,0 +1,36 @@
+---
+- name: Initial inventory population
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - include_role:
+      name: juniper_code_upgrade
+
+- hosts: test_nodes
+  gather_facts: no
+  connection: local
+  roles:
+    - Juniper.junos
+  strategy: free
+  serial: 20
+
+  tasks:
+  - include_vars:
+      file: ../secrets.yml
+    no_log: true
+
+  - include_role:
+      name: juniper_code_upgrade
+      tasks_from: main2
+
+- name: Email and Cleanup
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - include_role:
+      name: juniper_code_upgrade
+      tasks_from: main3
