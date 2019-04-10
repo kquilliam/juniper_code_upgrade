@@ -1,0 +1,60 @@
+- name: Verify that succesful hosts file exists
+  stat:
+    path:  "{{ role_path }}/files/{{ hostvars['localhost']['current_datetime'] }}-success.yml"
+  register: file_success
+
+- name: Verify that succesful hosts file exists
+  stat:
+    path:  "{{ role_path }}/files/{{ hostvars['localhost']['current_datetime'] }}-failed.yml"
+  register: file_failed
+
+- name: Verify that succesful hosts file exists
+  stat:
+    path:  "{{ role_path }}/files/{{ hostvars['localhost']['current_datetime'] }}-unreachable.yml"
+  register: file_unreachable
+
+- name: Slack message for devices that succeeded
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/{{ datetime }}-success.yml')|replace (',','\n') }}"
+        color: '#13f231'
+        title: Code Has Been Uploaded To The Following Devices And Is Awaiting Install
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{[ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_success.stat.exists == True
+
+- name: Slack message for devices that failed to receive code
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/{{ datetime }}-failed.yml')|replace (',','\n') }}"
+        color: '#ff0000'
+        title: Code Was Unable To Be Pushed To The Following Devices
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{[ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_failed.stat.exists == True
+
+- name: Slack message for devices that were unreachable
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/{{ datetime }}-unreachable.yml')|replace (',','\n') }}"
+        color: '#ff9900'
+        title: The Following Devices Were Unreachable
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{[ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_unreachable.stat.exists == True
+
+- find:
+    path: "{{ role_path }}/files"
+    pattern: "{{ datetime }}*"
+  register: cleanup
+
+- file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ cleanup.files}}"
