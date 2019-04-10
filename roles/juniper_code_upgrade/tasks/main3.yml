@@ -1,0 +1,162 @@
+- name: Verify that failed JUNOS validation hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_validation.yml"
+  register: file_validation_status
+
+- name: Verify that unreachable hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_unreachable.yml"
+  register: file_unreachable_status
+
+- name: Verify that failed hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_failed.yml"
+  register: file_failed_status
+
+- name: Verify that succesful hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_success.yml"
+  register: file_success_status
+
+- name: Verify that unrecovered hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_no_recover.yml"
+  register: file_unrecovered_status
+
+- name: Verify that JSNAPY failed hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_snap_failed.yml"
+  register: file_snap_failed_status
+
+- name: Verify that failed upgrade and JNSAPY hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_snap_upgrade_failed.yml"
+  register: file_snap_upgrade_failed_status
+
+- name: Verify that failed upgrade hosts file exists
+  stat:
+    path: "{{ role_path }}/files/temp_upgrade_failed.yml"
+  register: file_upgrade_failed_status
+
+- name: Verify that current code hosts file exists
+  stat:
+    path:  "{{ role_path }}/files/temp_current.yml"
+  register: file_current_status
+
+- name: Slack message for devices that were unreachable
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_validation.yml')|replace (',','\n') }}"
+        color: '#daa520'
+        title: The following devices failed JUNOS software validation
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_validation_status.stat.exists == True
+
+
+- name: Slack message for devices that were unreachable
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_unreachable.yml')|replace (',','\n') }}"
+        color: '#daa520'
+        title: The following devices were unreachable
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_unreachable_status.stat.exists == True
+
+- name: Slack message for devices that failed to upgrade
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_failed.yml')|replace (',','\n') }}"
+        color: '#ff0000'
+        title: Upgrade Failed On The Following Devices
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_failed_status.stat.exists == True
+
+- name: Slack message for devices that were successful
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_success.yml')|replace (',','\n') }}"
+        color: '#13f231'
+        title: The Following Devices Were Upgraded Successfully
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_success_status.stat.exists == True
+
+- name: Slack message for devices that were upgraded but didnt recover
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_no_recover.yml')|replace (',','\n') }}"
+        color: '#ff0000'
+        title: The Following Devices Were Upgraded But Did Not Recover
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_unrecovered_status.stat.exists == True
+
+- name: Slack message for devices that upgraded but failed JSNAPy
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_snap_failed.yml')|replace (',','\n') }}"
+        color: '#ff9900'
+        title: The Following Devices Were Upgraded But Did Not Pass JSNAPy Validation
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_snap_failed_status.stat.exists == True
+
+- name: Slack message for devices that failed to upgrade and failed JSNAPy
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_snap_upgrade_failed.yml')|replace (',','\n') }}"
+        color: '#ff0000'
+        title: The Following Devices Failed To Upgrade And Did Not Pass JSNAPy Validation
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_snap_upgrade_failed_status.stat.exists == True
+
+- name: Slack message for devices that failed to upgrade
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_upgrade_failed.yml')|replace (',','\n') }}"
+        color: '#ff9900'
+        title: The Following Devices Were Unable To Be Upgraded
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_upgrade_failed_status.stat.exists == True
+
+- name: Slack message for devices that were already on current code
+  slack:
+    token: "{{ slack_token }}"
+    attachments:
+      - text: "{{ lookup('lines', 'cat {{ role_path }}/files/temp_current.yml')|replace (',','\n') }}"
+        color: '#13f231'
+        title: The Following Devices Already On The Correct Code
+        author_name: "Initiator: {{ rundeck_user }}"
+        pretext: "*Job: {{ rundeck_job_name }}*"
+        footer: "<https://{{ rundeck }}:4443/project/Demo/execution/show/{{ rundeck_job_id }}|Rundeck Job ID: {{ rundeck_job_id }}>"
+  when: file_current_status.stat.exists == True
+
+- find:
+    path: "{{ role_path }}/files"
+  register: cleanup
+
+- file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ cleanup.files}}"
